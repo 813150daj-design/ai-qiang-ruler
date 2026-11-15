@@ -5,3 +5,11 @@ human/
 human_raw/
 *.log
 _GPT完成说明.md
+toy-dist/
+web/model.json
+web/checks.json
+web/LICENSE
+web/SOURCE-README.md
+tests/web_reference.json
+toy-assets/*.zip
+docs/toy-resource-check.json
