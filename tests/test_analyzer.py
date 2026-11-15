@@ -11,6 +11,39 @@ from aiqiang.features import cjk_count, featurize, predict_doc
 from common import MODEL_PATH, ROOT, assert_nested, read_json
 
 
+class VerdictTests(unittest.TestCase):
+    def test_five_tier_boundaries(self):
+        limits = dict(ai_high=0.9, mid_high=0.8, mid_low=0.5, human_low=0.2)
+        for p, expected in [
+            (0.0, 'likely_human'), (0.1999, 'likely_human'), (0.2, 'likely_human'),
+            (0.2001, 'leans_human'), (0.4999, 'leans_human'),
+            (0.5, 'uncertain'), (0.5001, 'uncertain'), (0.7999, 'uncertain'),
+            (0.8, 'leans_ai'), (0.8001, 'leans_ai'), (0.8999, 'leans_ai'),
+            (0.9, 'likely_ai'), (0.9001, 'likely_ai'), (1.0, 'likely_ai'),
+        ]:
+            with self.subTest(p=p):
+                self.assertEqual(analyzer.verdict_for(p, limits), expected)
+
+    def test_old_limits_produce_only_three_tiers(self):
+        limits = dict(ai_high=0.9, human_low=0.2)
+        codes = set()
+        for p in [i / 10000 for i in range(10001)]:
+            expected = 'likely_ai' if p >= 0.9 else 'likely_human' if p <= 0.2 else 'uncertain'
+            code = analyzer.verdict_for(p, limits)
+            self.assertEqual(code, expected)
+            codes.add(code)
+        self.assertEqual(codes, {'likely_ai', 'likely_human', 'uncertain'})
+        resolved = analyzer.thresholds({'thresholds': limits})
+        self.assertEqual(resolved['mid_high'], 0.9)
+        self.assertEqual(resolved['mid_low'], 0.2)
+        self.assertNotIn('mid_high', limits)
+
+    def test_equal_thresholds_preserve_decision_order(self):
+        limits = dict(ai_high=0.5, mid_high=0.5, mid_low=0.5, human_low=0.5)
+        self.assertEqual(analyzer.verdict_for(0.5, limits), 'likely_ai')
+        self.assertEqual(analyzer.verdict_for(0.4999, limits), 'likely_human')
+
+
 class AnalyzerTests(unittest.TestCase):
     def setUp(self):
         self.model = read_json(MODEL_PATH)
@@ -43,6 +76,35 @@ class AnalyzerTests(unittest.TestCase):
             self.assertEqual(predict.call_count, int(size >= 60))
         self.assertEqual(analyze('中文', self.model)['verdict_text'], '太短了，没法判断（至少要 60 个汉字）')
 
+    def test_tier_labels_notes_and_human_reference_text(self):
+        model = copy.deepcopy(self.model)
+        model['thresholds'].update(mid_high=0.8, mid_low=0.5)
+        model['tiers'] = {
+            code: dict(label='标签 ' + code, note='实测说明 ' + code)
+            for code in analyzer.VERDICT_LABELS
+        }
+        for p in (0.95, 0.85, 0.6, 0.4, 0.1):
+            code = analyzer.verdict_for(p, analyzer.thresholds(model))
+            with self.subTest(code=code):
+                with patch.object(analyzer, 'predict_doc', return_value=self.prediction(p)):
+                    result = analyze(self.text, model)
+                    old_result = analyze(self.text, self.model)
+                self.assertEqual(result['verdict'], code)
+                self.assertEqual(result['verdict_text'], model['tiers'][code]['label'])
+                self.assertEqual(result['verdict_note'], model['tiers'][code]['note'])
+                self.assertEqual(old_result['verdict_note'], '')
+                for key in ('ai_prob', 'probs', 'which', 'evidence', 'pieces', 'notes'):
+                    self.assertEqual(result[key], old_result[key])
+                if code in ('likely_human', 'leans_human'):
+                    self.assertEqual(
+                        result['which_text'], analyzer.VERDICT_LABELS[code] + '，这一栏仅供参考',
+                    )
+                model['tiers'][code] = {}
+                with patch.object(analyzer, 'predict_doc', return_value=self.prediction(p)):
+                    fallback = analyze(self.text, model)
+                self.assertEqual(fallback['verdict_text'], analyzer.VERDICT_LABELS[code])
+                self.assertEqual(fallback['verdict_note'], '')
+
     def test_too_short_and_no_model_still_have_all_markers(self):
         for text in ['', '   ', '原来——人生很温柔。']:
             for model in (None, self.model):
@@ -50,6 +112,7 @@ class AnalyzerTests(unittest.TestCase):
                     result = analyze(text, model)
                 self.assertEqual(result['verdict'], 'no_model' if model is None else 'too_short')
                 self.assertIsNone(result['ai_prob'])
+                self.assertEqual(result['verdict_note'], '')
                 self.assertIsNone(result['probs'])
                 self.assertEqual(result['which'], [])
                 self.assertEqual(result['which_text'], '')

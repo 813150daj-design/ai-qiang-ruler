@@ -1,433 +1,541 @@
 {
  "calibration": {
-  "a": 2.2389459488010948,
-  "b": 2.476198529098778
- },
- "thresholds": {
-  "ai_high": 0.9917465400519851,
-  "human_low": 0.3751573531921756
+  "a": 2.252474780472593,
+  "b": 2.495308874003551
  },
  "groups": {
   "DeepSeek": {
    "kind": "AI (out-of-fold, unseen prompts)",
    "n": 251,
-   "likely_ai": 0.4302788844621514,
-   "uncertain": 0.5099601593625498,
-   "likely_human": 0.05976095617529881,
-   "which_acc": 0.6414342629482072,
-   "which_acc_when_flagged": 0.75
+   "likely_ai": 0.4262948207171315,
+   "leans_ai": 0.1593625498007968,
+   "uncertain": 0.30278884462151395,
+   "leans_human": 0.05976095617529881,
+   "likely_human": 0.05179282868525897,
+   "which_acc": 0.6334661354581673,
+   "which_acc_when_flagged": 0.7102803738317757
   },
   "GPT": {
    "kind": "AI (out-of-fold, unseen prompts)",
    "n": 226,
-   "likely_ai": 0.3893805309734513,
-   "uncertain": 0.5530973451327433,
-   "likely_human": 0.05752212389380531,
-   "which_acc": 0.6769911504424779,
-   "which_acc_when_flagged": 0.6136363636363636
+   "likely_ai": 0.38495575221238937,
+   "leans_ai": 0.21238938053097345,
+   "uncertain": 0.3008849557522124,
+   "leans_human": 0.035398230088495575,
+   "likely_human": 0.06637168141592921,
+   "which_acc": 0.672566371681416,
+   "which_acc_when_flagged": 0.632183908045977
   },
   "Claude": {
    "kind": "AI (out-of-fold, unseen prompts)",
    "n": 240,
-   "likely_ai": 0.4708333333333333,
-   "uncertain": 0.49583333333333335,
+   "likely_ai": 0.45416666666666666,
+   "leans_ai": 0.15833333333333333,
+   "uncertain": 0.3375,
+   "leans_human": 0.016666666666666666,
    "likely_human": 0.03333333333333333,
-   "which_acc": 0.8125,
-   "which_acc_when_flagged": 0.8672566371681416
+   "which_acc": 0.8208333333333333,
+   "which_acc_when_flagged": 0.8899082568807339
   },
   "old_chatgpt_train/oof": {
    "kind": "AI (ChatGPT 2023, trained on other questions)",
    "n": 150,
-   "likely_ai": 0.44666666666666666,
-   "uncertain": 0.46,
-   "likely_human": 0.09333333333333334,
+   "likely_ai": 0.46,
+   "leans_ai": 0.16,
+   "uncertain": 0.22666666666666666,
+   "leans_human": 0.05333333333333334,
+   "likely_human": 0.1,
    "which_acc": 1.0
   },
   "cedcc/calib": {
    "kind": "human",
    "n": 836,
    "likely_ai": 0.0035885167464114833,
-   "uncertain": 0.3349282296650718,
-   "likely_human": 0.6614832535885168
+   "leans_ai": 0.01555023923444976,
+   "uncertain": 0.25,
+   "leans_human": 0.08492822966507177,
+   "likely_human": 0.645933014354067
   },
   "cedcc/test": {
    "kind": "human",
    "n": 858,
    "likely_ai": 0.0011655011655011655,
-   "uncertain": 0.33916083916083917,
-   "likely_human": 0.6596736596736597
+   "leans_ai": 0.013986013986013986,
+   "uncertain": 0.22144522144522144,
+   "leans_human": 0.11655011655011654,
+   "likely_human": 0.6468531468531469
   },
   "clue/heldout": {
    "kind": "human",
    "n": 716,
    "likely_ai": 0.0,
-   "uncertain": 0.07262569832402235,
-   "likely_human": 0.9273743016759777
+   "leans_ai": 0.0013966480446927375,
+   "uncertain": 0.051675977653631286,
+   "leans_human": 0.023743016759776536,
+   "likely_human": 0.9231843575418994
   },
   "clue/oof": {
    "kind": "human",
    "n": 3598,
    "likely_ai": 0.00027793218454697053,
-   "uncertain": 0.061145080600333516,
-   "likely_human": 0.9385769872151195
+   "leans_ai": 0.0019455252918287938,
+   "uncertain": 0.04030016675931073,
+   "leans_human": 0.023068371317398556,
+   "likely_human": 0.934408004446915
   },
   "cmrc/heldout": {
    "kind": "human",
    "n": 384,
    "likely_ai": 0.0,
-   "uncertain": 0.044270833333333336,
-   "likely_human": 0.9557291666666666
+   "leans_ai": 0.0026041666666666665,
+   "uncertain": 0.03125,
+   "leans_human": 0.020833333333333332,
+   "likely_human": 0.9453125
   },
   "cmrc/oof": {
    "kind": "human",
    "n": 1058,
    "likely_ai": 0.0,
-   "uncertain": 0.038752362948960305,
-   "likely_human": 0.9612476370510397
+   "leans_ai": 0.0,
+   "uncertain": 0.026465028355387523,
+   "leans_human": 0.01606805293005671,
+   "likely_human": 0.9574669187145558
   },
   "gemini/test": {
    "kind": "AI never seen (Gemini)",
    "n": 54,
    "likely_ai": 0.35185185185185186,
-   "uncertain": 0.6296296296296297,
+   "leans_ai": 0.3333333333333333,
+   "uncertain": 0.2962962962962963,
+   "leans_human": 0.0,
    "likely_human": 0.018518518518518517
   },
   "hc3_baike/calib": {
    "kind": "human",
    "n": 637,
    "likely_ai": 0.006279434850863423,
-   "uncertain": 0.2967032967032967,
-   "likely_human": 0.6970172684458399
+   "leans_ai": 0.018838304552590265,
+   "uncertain": 0.2150706436420722,
+   "leans_human": 0.07535321821036106,
+   "likely_human": 0.6844583987441131
   },
   "hc3_baike/test": {
    "kind": "human",
    "n": 629,
    "likely_ai": 0.0,
-   "uncertain": 0.3052464228934817,
-   "likely_human": 0.6947535771065183
+   "leans_ai": 0.009538950715421303,
+   "uncertain": 0.2178060413354531,
+   "leans_human": 0.09379968203497616,
+   "likely_human": 0.6788553259141494
   },
   "hc3_finance/heldout": {
    "kind": "human",
    "n": 126,
    "likely_ai": 0.0,
-   "uncertain": 0.047619047619047616,
+   "leans_ai": 0.007936507936507936,
+   "uncertain": 0.023809523809523808,
+   "leans_human": 0.015873015873015872,
    "likely_human": 0.9523809523809523
   },
   "hc3_finance/oof": {
    "kind": "human",
    "n": 512,
    "likely_ai": 0.0,
-   "uncertain": 0.046875,
-   "likely_human": 0.953125
+   "leans_ai": 0.001953125,
+   "uncertain": 0.025390625,
+   "leans_human": 0.015625,
+   "likely_human": 0.95703125
   },
   "hc3_law/calib": {
    "kind": "human",
    "n": 62,
    "likely_ai": 0.0,
-   "uncertain": 0.12903225806451613,
+   "leans_ai": 0.016129032258064516,
+   "uncertain": 0.0967741935483871,
+   "leans_human": 0.016129032258064516,
    "likely_human": 0.8709677419354839
   },
   "hc3_law/test": {
    "kind": "human",
    "n": 62,
    "likely_ai": 0.0,
-   "uncertain": 0.16129032258064516,
-   "likely_human": 0.8387096774193549
+   "leans_ai": 0.0,
+   "uncertain": 0.14516129032258066,
+   "leans_human": 0.04838709677419355,
+   "likely_human": 0.8064516129032258
   },
   "hc3_medicine/calib": {
    "kind": "human",
    "n": 531,
    "likely_ai": 0.0,
-   "uncertain": 0.19397363465160075,
-   "likely_human": 0.8060263653483992
+   "leans_ai": 0.011299435028248588,
+   "uncertain": 0.13559322033898305,
+   "leans_human": 0.062146892655367235,
+   "likely_human": 0.7909604519774012
   },
   "hc3_medicine/test": {
    "kind": "human",
    "n": 524,
    "likely_ai": 0.003816793893129771,
-   "uncertain": 0.2385496183206107,
-   "likely_human": 0.7576335877862596
+   "leans_ai": 0.003816793893129771,
+   "uncertain": 0.16412213740458015,
+   "leans_human": 0.08015267175572519,
+   "likely_human": 0.7480916030534351
   },
   "hc3_nlpcc_dbqa/calib": {
    "kind": "human",
    "n": 181,
    "likely_ai": 0.0,
-   "uncertain": 0.17679558011049723,
+   "leans_ai": 0.0,
+   "uncertain": 0.143646408839779,
+   "leans_human": 0.03314917127071823,
    "likely_human": 0.8232044198895028
   },
   "hc3_nlpcc_dbqa/test": {
    "kind": "human",
    "n": 180,
    "likely_ai": 0.0,
-   "uncertain": 0.12222222222222222,
-   "likely_human": 0.8777777777777778
+   "leans_ai": 0.005555555555555556,
+   "uncertain": 0.09444444444444444,
+   "leans_human": 0.027777777777777776,
+   "likely_human": 0.8722222222222222
   },
   "hc3_open_qa/heldout": {
    "kind": "human",
    "n": 600,
    "likely_ai": 0.0,
-   "uncertain": 0.06333333333333334,
-   "likely_human": 0.9366666666666666
+   "leans_ai": 0.0016666666666666668,
+   "uncertain": 0.04,
+   "leans_human": 0.02666666666666667,
+   "likely_human": 0.9316666666666666
   },
   "hc3_open_qa/oof": {
    "kind": "human",
    "n": 900,
    "likely_ai": 0.0,
-   "uncertain": 0.04888888888888889,
-   "likely_human": 0.9511111111111111
+   "leans_ai": 0.0,
+   "uncertain": 0.024444444444444446,
+   "leans_human": 0.027777777777777776,
+   "likely_human": 0.9477777777777778
   },
   "hc3_psychology/heldout": {
    "kind": "human",
    "n": 661,
    "likely_ai": 0.0,
-   "uncertain": 0.048411497730711045,
-   "likely_human": 0.9515885022692889
+   "leans_ai": 0.0015128593040847202,
+   "uncertain": 0.024205748865355523,
+   "leans_human": 0.028744326777609682,
+   "likely_human": 0.9455370650529501
   },
   "hc3_psychology/oof": {
    "kind": "human",
    "n": 981,
    "likely_ai": 0.0010193679918450561,
-   "uncertain": 0.05504587155963303,
-   "likely_human": 0.9439347604485219
+   "leans_ai": 0.0,
+   "uncertain": 0.03058103975535168,
+   "leans_human": 0.03058103975535168,
+   "likely_human": 0.9378185524974516
   },
   "old_chatgpt/test": {
    "kind": "AI never seen (ChatGPT gpt-3.5, 2023)",
    "n": 600,
    "likely_ai": 0.25833333333333336,
-   "uncertain": 0.59,
-   "likely_human": 0.15166666666666667
+   "leans_ai": 0.16333333333333333,
+   "uncertain": 0.37833333333333335,
+   "leans_human": 0.056666666666666664,
+   "likely_human": 0.14333333333333334
   },
   "pd_famous/calib": {
    "kind": "human",
    "n": 137,
    "likely_ai": 0.0,
-   "uncertain": 0.0072992700729927005,
+   "leans_ai": 0.0,
+   "uncertain": 0.0,
+   "leans_human": 0.0072992700729927005,
    "likely_human": 0.9927007299270073
   },
   "pd_famous/test": {
    "kind": "human",
    "n": 71,
    "likely_ai": 0.0,
-   "uncertain": 0.056338028169014086,
-   "likely_human": 0.9436619718309859
+   "leans_ai": 0.0,
+   "uncertain": 0.014084507042253521,
+   "leans_human": 0.056338028169014086,
+   "likely_human": 0.9295774647887324
   },
   "pd_other/heldout": {
    "kind": "human",
    "n": 93,
    "likely_ai": 0.0,
+   "leans_ai": 0.0,
    "uncertain": 0.0,
+   "leans_human": 0.0,
    "likely_human": 1.0
   },
   "pd_other/oof": {
    "kind": "human",
    "n": 486,
    "likely_ai": 0.0,
-   "uncertain": 0.00411522633744856,
-   "likely_human": 0.9958847736625515
+   "leans_ai": 0.0,
+   "uncertain": 0.00205761316872428,
+   "leans_human": 0.00411522633744856,
+   "likely_human": 0.9938271604938271
   },
   "weibo/calib": {
    "kind": "human",
    "n": 1500,
    "likely_ai": 0.0,
-   "uncertain": 0.07933333333333334,
-   "likely_human": 0.9206666666666666
+   "leans_ai": 0.002,
+   "uncertain": 0.051333333333333335,
+   "leans_human": 0.03266666666666666,
+   "likely_human": 0.914
   },
   "weibo/test": {
    "kind": "human",
    "n": 1500,
    "likely_ai": 0.0013333333333333333,
-   "uncertain": 0.08466666666666667,
-   "likely_human": 0.914
+   "leans_ai": 0.0013333333333333333,
+   "uncertain": 0.054,
+   "leans_human": 0.03666666666666667,
+   "likely_human": 0.9066666666666666
   }
+ },
+ "thresholds": {
+  "ai_high": 0.9920117645522467,
+  "mid_high": 0.9609100763715667,
+  "mid_low": 0.5,
+  "human_low": 0.35731146244706735
  },
  "which_confusion": [
   [
-   161,
+   159,
    45,
-   45
+   47
   ],
   [
-   19,
-   153,
-   54
-  ],
-  [
-   24,
    21,
-   195
+   152,
+   53
+  ],
+  [
+   21,
+   22,
+   197
   ]
  ],
- "which_acc": 0.7099023709902371,
+ "which_acc": 0.708507670850767,
  "ai_all": {
   "n": 717,
-  "likely_ai": 0.4309623430962343,
-  "uncertain": 0.5188284518828452,
+  "likely_ai": 0.4225941422594142,
+  "leans_ai": 0.17573221757322174,
+  "uncertain": 0.3138075313807531,
+  "leans_human": 0.03765690376569038,
   "likely_human": 0.0502092050209205
  },
  "ai_long_docs": {
   "n": 80,
-  "likely_ai": 0.5375,
-  "uncertain": 0.4375,
+  "likely_ai": 0.525,
+  "leans_ai": 0.2125,
+  "uncertain": 0.2125,
+  "leans_human": 0.025,
   "likely_human": 0.025
  },
  "ai_by_genre": {
   "书信": {
    "n": 30,
    "likely_ai": 0.3333333333333333,
-   "uncertain": 0.6666666666666666,
+   "leans_ai": 0.23333333333333334,
+   "uncertain": 0.4,
+   "leans_human": 0.03333333333333333,
    "likely_human": 0.0,
    "which_acc": 0.6333333333333333
   },
   "作文": {
    "n": 9,
    "likely_ai": 1.0,
+   "leans_ai": 0.0,
    "uncertain": 0.0,
+   "leans_human": 0.0,
    "likely_human": 0.0,
-   "which_acc": 1.0
+   "which_acc": 0.8888888888888888
   },
   "小故事": {
    "n": 21,
    "likely_ai": 0.6666666666666666,
-   "uncertain": 0.3333333333333333,
+   "leans_ai": 0.14285714285714285,
+   "uncertain": 0.19047619047619047,
+   "leans_human": 0.0,
    "likely_human": 0.0,
    "which_acc": 0.42857142857142855
   },
   "应用文": {
    "n": 45,
    "likely_ai": 0.2,
-   "uncertain": 0.7111111111111111,
+   "leans_ai": 0.15555555555555556,
+   "uncertain": 0.5111111111111111,
+   "leans_human": 0.044444444444444446,
    "likely_human": 0.08888888888888889,
-   "which_acc": 0.7333333333333333
+   "which_acc": 0.7555555555555555
   },
   "新闻": {
    "n": 30,
-   "likely_ai": 0.03333333333333333,
-   "uncertain": 0.9333333333333333,
+   "likely_ai": 0.0,
+   "leans_ai": 0.3,
+   "uncertain": 0.6,
+   "leans_human": 0.06666666666666667,
    "likely_human": 0.03333333333333333,
    "which_acc": 0.7333333333333333
   },
   "日记": {
    "n": 24,
    "likely_ai": 0.9166666666666666,
-   "uncertain": 0.08333333333333333,
+   "leans_ai": 0.041666666666666664,
+   "uncertain": 0.041666666666666664,
+   "leans_human": 0.0,
    "likely_human": 0.0,
-   "which_acc": 0.5416666666666666
+   "which_acc": 0.5
   },
   "朋友圈": {
    "n": 57,
    "likely_ai": 0.2807017543859649,
-   "uncertain": 0.6666666666666666,
-   "likely_human": 0.05263157894736842,
+   "leans_ai": 0.2631578947368421,
+   "uncertain": 0.38596491228070173,
+   "leans_human": 0.05263157894736842,
+   "likely_human": 0.017543859649122806,
    "which_acc": 0.6666666666666666
   },
   "百科": {
    "n": 48,
-   "likely_ai": 0.10416666666666667,
-   "uncertain": 0.6458333333333334,
-   "likely_human": 0.25,
-   "which_acc": 0.6458333333333334
+   "likely_ai": 0.125,
+   "leans_ai": 0.16666666666666666,
+   "uncertain": 0.3958333333333333,
+   "leans_human": 0.08333333333333333,
+   "likely_human": 0.22916666666666666,
+   "which_acc": 0.7291666666666666
   },
   "科普": {
    "n": 33,
-   "likely_ai": 0.12121212121212122,
-   "uncertain": 0.7575757575757576,
-   "likely_human": 0.12121212121212122,
-   "which_acc": 0.696969696969697
+   "likely_ai": 0.15151515151515152,
+   "leans_ai": 0.18181818181818182,
+   "uncertain": 0.42424242424242425,
+   "leans_human": 0.09090909090909091,
+   "likely_human": 0.15151515151515152,
+   "which_acc": 0.6363636363636364
   },
   "观点": {
    "n": 18,
    "likely_ai": 0.6666666666666666,
-   "uncertain": 0.3333333333333333,
+   "leans_ai": 0.16666666666666666,
+   "uncertain": 0.16666666666666666,
+   "leans_human": 0.0,
    "likely_human": 0.0,
    "which_acc": 0.7222222222222222
   },
   "评论": {
    "n": 75,
    "likely_ai": 0.16,
-   "uncertain": 0.7866666666666666,
-   "likely_human": 0.05333333333333334,
-   "which_acc": 0.6533333333333333
+   "leans_ai": 0.16,
+   "uncertain": 0.6,
+   "leans_human": 0.04,
+   "likely_human": 0.04,
+   "which_acc": 0.6933333333333334
   },
   "说明": {
    "n": 15,
-   "likely_ai": 0.8666666666666667,
-   "uncertain": 0.13333333333333333,
+   "likely_ai": 0.8,
+   "leans_ai": 0.13333333333333333,
+   "uncertain": 0.06666666666666667,
+   "leans_human": 0.0,
    "likely_human": 0.0,
-   "which_acc": 0.6
+   "which_acc": 0.4
   },
   "问答": {
    "n": 264,
-   "likely_ai": 0.5416666666666666,
-   "uncertain": 0.42803030303030304,
-   "likely_human": 0.030303030303030304,
-   "which_acc": 0.803030303030303
+   "likely_ai": 0.5189393939393939,
+   "leans_ai": 0.17803030303030304,
+   "uncertain": 0.22727272727272727,
+   "leans_human": 0.03409090909090909,
+   "likely_human": 0.041666666666666664,
+   "which_acc": 0.7992424242424242
   },
   "随笔": {
    "n": 48,
    "likely_ai": 0.8125,
-   "uncertain": 0.1875,
+   "leans_ai": 0.125,
+   "uncertain": 0.0625,
+   "leans_human": 0.0,
    "likely_human": 0.0,
-   "which_acc": 0.6041666666666666
+   "which_acc": 0.5833333333333334
   },
   "[v1]": {
    "n": 234,
-   "likely_ai": 0.5982905982905983,
-   "uncertain": 0.37606837606837606,
-   "likely_human": 0.02564102564102564
+   "likely_ai": 0.594017094017094,
+   "leans_ai": 0.16666666666666666,
+   "uncertain": 0.20512820512820512,
+   "leans_human": 0.017094017094017096,
+   "likely_human": 0.017094017094017096
   },
   "[v2]": {
    "n": 315,
-   "likely_ai": 0.43174603174603177,
-   "uncertain": 0.5174603174603175,
-   "likely_human": 0.050793650793650794
+   "likely_ai": 0.4095238095238095,
+   "leans_ai": 0.19047619047619047,
+   "uncertain": 0.3111111111111111,
+   "leans_human": 0.03492063492063492,
+   "likely_human": 0.05396825396825397
   },
   "[v3]": {
    "n": 168,
-   "likely_ai": 0.19642857142857142,
-   "uncertain": 0.7202380952380952,
-   "likely_human": 0.08333333333333333
+   "likely_ai": 0.20833333333333334,
+   "leans_ai": 0.16071428571428573,
+   "uncertain": 0.47023809523809523,
+   "leans_human": 0.07142857142857142,
+   "likely_human": 0.08928571428571429
   }
  },
  "auc": {
-  "cedcc/calib": 0.9271419324271118,
-  "cedcc/test": 0.9338557769520113,
-  "clue/heldout": 0.9855621264891735,
-  "clue/oof": 0.9864879217727499,
-  "cmrc/heldout": 0.9863362970711297,
-  "cmrc/oof": 0.9906563000108096,
-  "hc3_baike/calib": 0.9320516104736069,
-  "hc3_baike/test": 0.9376642209524316,
-  "hc3_finance/heldout": 0.985344579486839,
-  "hc3_finance/oof": 0.9902888554741981,
-  "hc3_law/calib": 0.9647050884059927,
-  "hc3_law/test": 0.9649750303684708,
-  "hc3_medicine/calib": 0.9564517357581679,
-  "hc3_medicine/test": 0.9505493628030279,
-  "hc3_nlpcc_dbqa/calib": 0.9658028772432712,
-  "hc3_nlpcc_dbqa/test": 0.9737021540368821,
-  "hc3_open_qa/heldout": 0.9843840074384007,
-  "hc3_open_qa/oof": 0.9891755772508911,
-  "hc3_psychology/heldout": 0.9879920748960305,
-  "hc3_psychology/oof": 0.987473289573017,
-  "pd_famous/calib": 0.9962332915941321,
-  "pd_famous/test": 0.9920246724419038,
-  "pd_other/heldout": 0.9985903030848368,
-  "pd_other/oof": 0.998344152303551,
-  "weibo/calib": 0.98246490004649,
-  "weibo/test": 0.9805309158530916
+  "cedcc/calib": 0.9279210292753565,
+  "cedcc/test": 0.934483229462309,
+  "clue/heldout": 0.9858776871352547,
+  "clue/oof": 0.9867809716075023,
+  "cmrc/heldout": 0.9867830369595537,
+  "cmrc/oof": 0.9911045023240608,
+  "hc3_baike/calib": 0.9328113607850608,
+  "hc3_baike/test": 0.9382717691848875,
+  "hc3_finance/heldout": 0.9856323747537137,
+  "hc3_finance/oof": 0.990988929567643,
+  "hc3_law/calib": 0.9656273901111261,
+  "hc3_law/test": 0.9664372159985604,
+  "hc3_medicine/calib": 0.9573263782185135,
+  "hc3_medicine/test": 0.9513132539099514,
+  "hc3_nlpcc_dbqa/calib": 0.9659184601277576,
+  "hc3_nlpcc_dbqa/test": 0.9742290407562374,
+  "hc3_open_qa/heldout": 0.9847489539748954,
+  "hc3_open_qa/oof": 0.9899194173252751,
+  "hc3_psychology/heldout": 0.9886672701224002,
+  "hc3_psychology/oof": 0.9877192458667258,
+  "pd_famous/calib": 0.996365635402987,
+  "pd_famous/test": 0.9922800400730745,
+  "pd_other/heldout": 0.998545312757757,
+  "pd_other/oof": 0.998263799209096,
+  "weibo/calib": 0.9830822873082288,
+  "weibo/test": 0.9811101813110181
  },
  "by_length": {
   "50-100": {
    "human": {
     "n": 2153,
     "likely_ai": 0.00046446818392940084,
-    "uncertain": 0.08128193218764515,
-    "likely_human": 0.9182535996284255
+    "leans_ai": 0.0023223409196470044,
+    "uncertain": 0.0543427775197399,
+    "leans_human": 0.031119368323269857,
+    "likely_human": 0.9117510450534139
    },
    "ai": {
     "n": 48,
     "likely_ai": 0.10416666666666667,
-    "uncertain": 0.7291666666666666,
+    "leans_ai": 0.125,
+    "uncertain": 0.5625,
+    "leans_human": 0.041666666666666664,
     "likely_human": 0.16666666666666666
    }
   },
@@ -435,36 +543,46 @@
    "human": {
     "n": 2628,
     "likely_ai": 0.0015220700152207,
-    "uncertain": 0.1480213089802131,
-    "likely_human": 0.8504566210045662
+    "leans_ai": 0.00228310502283105,
+    "uncertain": 0.09855403348554033,
+    "leans_human": 0.0563165905631659,
+    "likely_human": 0.841324200913242
    },
    "ai": {
     "n": 340,
-    "likely_ai": 0.3411764705882353,
-    "uncertain": 0.5911764705882353,
-    "likely_human": 0.06764705882352941
+    "likely_ai": 0.3323529411764706,
+    "leans_ai": 0.17941176470588235,
+    "uncertain": 0.38235294117647056,
+    "leans_human": 0.05,
+    "likely_human": 0.05588235294117647
    }
   },
   "200-400": {
    "human": {
     "n": 1345,
     "likely_ai": 0.0,
-    "uncertain": 0.19330855018587362,
-    "likely_human": 0.8066914498141264
+    "leans_ai": 0.011895910780669145,
+    "uncertain": 0.13234200743494423,
+    "leans_human": 0.05799256505576208,
+    "likely_human": 0.7977695167286245
    },
    "ai": {
     "n": 329,
-    "likely_ai": 0.5714285714285714,
-    "uncertain": 0.4133738601823708,
-    "likely_human": 0.015197568389057751
+    "likely_ai": 0.5623100303951368,
+    "leans_ai": 0.17933130699088146,
+    "uncertain": 0.2066869300911854,
+    "leans_human": 0.0243161094224924,
+    "likely_human": 0.02735562310030395
    }
   },
   "400-100000": {
    "human": {
     "n": 278,
     "likely_ai": 0.0,
-    "uncertain": 0.33093525179856115,
-    "likely_human": 0.6690647482014388
+    "leans_ai": 0.0035971223021582736,
+    "uncertain": 0.21223021582733814,
+    "leans_human": 0.13309352517985612,
+    "likely_human": 0.6510791366906474
    },
    "ai": null
   }
@@ -475,8 +593,9 @@
   "min_df": 5,
   "seed": 1115,
   "max_fpr": 0.005,
+  "mid_fpr": 0.025,
   "pool": 8402,
   "ai": 867
  },
- "created": "2026-11-15 05:02"
+ "created": "2026-11-15 13:30"
 }

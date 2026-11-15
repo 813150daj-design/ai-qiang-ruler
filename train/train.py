@@ -50,6 +50,10 @@ import ref_features as R  # noqa: E402
 CLASSES = ['人', 'DeepSeek', 'GPT', 'Claude']
 AI_DIRS = {'deepseek': 1, 'gpt': 2, 'claude': 3}
 MAX_FPR = 0.005
+# v1.2 middle tiers: 「偏像 AI」 starts where no human group has more than MID_FPR at or above it;
+# 「偏像人」 is between human_low and MID_LOW (0.5: under it the calibrated score leans human)
+MID_FPR = 0.025
+MID_LOW = 0.5
 FOLDS = 6
 
 TRAIN_SOURCES = {'clue': 3000, 'hc3_open_qa': 900, 'hc3_finance': 500, 'hc3_psychology': 900, 'cmrc': 700,
@@ -415,13 +419,20 @@ def evaluate(pool, res, max_fpr=None):
     human_low = float(min(0.5, np.quantile(ai_p, 0.05)))
     if human_low >= ai_high:
         human_low = ai_high * 0.5
+    qm = {g: float(np.quantile(v, 1 - MID_FPR)) for g, v in groups.items() if len(v) >= 100}
+    mid_high = min(ai_high, max(0.5, max(qm.values()) + 1e-6))
+    mid_low = max(human_low, min(MID_LOW, mid_high))
     # report
-    rep = dict(calibration=dict(a=a, b=bb), thresholds=dict(ai_high=ai_high, human_low=human_low), groups={})
+    rep = dict(calibration=dict(a=a, b=bb), groups={},
+               thresholds=dict(ai_high=ai_high, mid_high=mid_high, mid_low=mid_low, human_low=human_low))
 
     def verdicts(ps):
+        """five tiers: p >= ai_high | [mid_high, ai_high) | [mid_low, mid_high) | (human_low, mid_low) | <= human_low"""
         ps = np.asarray(ps)
         return dict(n=int(len(ps)), likely_ai=float((ps >= ai_high).mean()),
-                    uncertain=float(((ps > human_low) & (ps < ai_high)).mean()),
+                    leans_ai=float(((ps >= mid_high) & (ps < ai_high)).mean()),
+                    uncertain=float(((ps >= mid_low) & (ps < mid_high)).mean()),
+                    leans_human=float(((ps > human_low) & (ps < mid_low)).mean()),
                     likely_human=float((ps <= human_low).mean()))
 
     for c in (1, 2, 3):
@@ -617,11 +628,14 @@ def export(a, pool, res, rep):
                  feature_sets=[], bias=[round(float(v), 6) for v in b],
                  ai_calibration=dict(a=round(rep['calibration']['a'], 6), b=round(rep['calibration']['b'], 6)),
                  thresholds=dict(min_chars=50, ai_high=round(rep['thresholds']['ai_high'], 4),
+                                 mid_high=round(rep['thresholds']['mid_high'], 4),
+                                 mid_low=round(rep['thresholds']['mid_low'], 4),
                                  human_low=round(rep['thresholds']['human_low'], 4), which_min=0.5),
+                 tiers=tier_notes(rep),
                  eval=dict(summary_lines=summary_lines(rep)),
                  long_text=dict(R.LONG_TEXT),
                  training=dict(kind=a.kind, lam=a.lam, min_df=a.min_df, seed=a.seed, max_fpr=MAX_FPR,
-                               pool=len(pool), ai=int(sum(1 for x in pool if x['y'] > 0))))
+                               mid_fpr=MID_FPR, pool=len(pool), ai=int(sum(1 for x in pool if x['y'] > 0))))
     off = 0
     for fs, grams, cols, idf in zip(res['sets'], fz.grams, fz.cols, fz.idf):
         vocab = {}
@@ -687,6 +701,31 @@ GROUP_NAMES = {'clue': '社区问答、点评、新闻', 'hc3_open_qa': '社区�
                'hc3_nlpcc_dbqa': '问答', 'hc3_medicine': '医疗问答', 'hc3_law': '法律问答'}
 
 
+def tier_notes(rep):
+    """per verdict tier: the label and one honest line with the measured rates (shown under the verdict)"""
+    g = rep['groups']
+    hum = {k: v for k, v in g.items() if v['kind'] == 'human' and not k.endswith('/calib')}
+    tot = sum(v['n'] for v in hum.values())
+    up_mid = lambda v: v['likely_ai'] + v['leans_ai']  # noqa: E731
+    h_high = sum(v['likely_ai'] * v['n'] for v in hum.values()) / tot
+    h_mid = sum(up_mid(v) * v['n'] for v in hum.values()) / tot
+    big = {k: v for k, v in hum.items() if v['n'] >= 100}
+    wk = max(big, key=lambda k: up_mid(big[k]))
+    wname = GROUP_NAMES.get(wk.split('/')[0], wk.split('/')[0])
+    a = rep['ai_all']
+    return dict(
+        likely_ai=dict(label='很像 AI 写的', note='人写的文字只有约 %.2f%% 会到这一档；AI 文字约 %.0f%% 能到。' % (
+            100 * h_high, 100 * a['likely_ai'])),
+        leans_ai=dict(label='偏像 AI 写的', note='人写的文字约 %.1f%% 会到这一档或更高（%s约 %.1f%%）；'
+                      'AI 文字约 %.0f%% 能到。不能当证据。' % (100 * h_mid, wname, 100 * up_mid(big[wk]),
+                                                       100 * up_mid(a))),
+        uncertain=dict(label='不确定', note='人写的和 AI 写的都常落在这里，说明不了什么。'),
+        leans_human=dict(label='偏像人写的', note='AI 文字约 %.0f%% 也会落到这一档或更低。' % (
+            100 * (a['leans_human'] + a['likely_human']))),
+        likely_human=dict(label='更像人写的', note='仍有约 %.0f%% 的 AI 文字会落到这一档。' % (
+            100 * a['likely_human'])))
+
+
 def summary_lines(rep):
     """the lines the program shows under 「关于」 (Chinese, plain numbers)"""
     g = rep['groups']
@@ -704,23 +743,29 @@ def summary_lines(rep):
             flagged, 100.0 * flagged / tot, GROUP_NAMES.get(worst_k.split('/')[0], worst_k.split('/')[0]),
             100 * hum[worst_k]['likely_ai']),
     ]
+    mid = sum((v['likely_ai'] + v['leans_ai']) * v['n'] for v in hum.values()) / tot
+    lines.append('到“偏像 AI”或更高的：%.1f%%。' % (100 * mid))
     if ced:
-        lines.append('中学生作文（2021 年，从没拿来训练）：%.2f%% 被判成“很像 AI”，%.0f%% 判成“不确定”。' % (
-            100 * ced[0]['likely_ai'], 100 * ced[0]['uncertain']))
+        lines.append('中学生作文（2021 年，从没拿来训练）：%.2f%% 被判成“很像 AI”，%.1f%% 到“偏像 AI”或更高。' % (
+            100 * ced[0]['likely_ai'], 100 * (ced[0]['likely_ai'] + ced[0]['leans_ai'])))
+    aa = rep['ai_all']
     lines += [
-        'AI 文字（训练时没见过的题目）：%.0f%% 判成“很像 AI”，%.0f%% “不确定”，%.0f%% 被当成“更像人写的”。' % (
-            100 * rep['ai_all']['likely_ai'], 100 * rep['ai_all']['uncertain'], 100 * rep['ai_all']['likely_human']),
+        'AI 文字（训练时没见过的题目）：%.0f%% 判成“很像 AI”，%.0f%% “偏像 AI”，%.0f%% “不确定”，'
+        '%.0f%% “偏像人”，%.0f%% 被当成“更像人写的”。' % (
+            100 * aa['likely_ai'], 100 * aa['leans_ai'], 100 * aa['uncertain'], 100 * aa['leans_human'],
+            100 * aa['likely_human']),
         '猜“更像哪个 AI”（DeepSeek / GPT / Claude 三选一）：猜对 %.0f%%。' % (100 * rep['which_acc']),
     ]
     gm = g.get('gemini/test')
     if gm:
-        lines.append('从没训练过的 Gemini（%d 段）：%.0f%% 判成“很像 AI”，%.0f%% 被当成“更像人写的”。' % (
-            gm['n'], 100 * gm['likely_ai'], 100 * gm['likely_human']))
+        lines.append('从没训练过的 Gemini（%d 段）：%.0f%% 判成“很像 AI”，%.0f%% 到“偏像 AI”或更高，'
+                     '%.0f%% 被当成“更像人写的”。' % (gm['n'], 100 * gm['likely_ai'],
+                                               100 * (gm['likely_ai'] + gm['leans_ai']), 100 * gm['likely_human']))
     og = g.get('old_chatgpt/test')
     if og:
         hit = round(og['likely_ai'] * og['n'])
         lines.append('2023 年初的旧版 ChatGPT（这几类问题从没训练过）：%d 段里%s判成“很像 AI”，'
-                     '%.0f%% 反被当成“更像人写的”——模型换代后它会失灵。' % (
+                     '%.0f%% 被当成“更像人写的”。模型换代以后，成绩还会往下掉。' % (
                          og['n'], '一段也没' if hit == 0 else '只有 %d 段' % hit, 100 * og['likely_human']))
     lines.append('AI 样本：三家各约 %d 篇、%d 道题；平实的百科、科普、新闻类 AI 文字基本认不出。' % (
         round(sum(per.values()) / 3.0), prompts))

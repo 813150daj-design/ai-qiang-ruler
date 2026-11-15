@@ -5,15 +5,20 @@ import tkinter as tk
 from pathlib import Path
 from tkinter import filedialog, font, messagebox, ttk
 
-from aiqiang import DEFAULT_MODEL_PATH, load_model
-from aiqiang.analyzer import MISSING_MODEL_MESSAGE, analyze_loaded, thresholds
+from aiqiang import DEFAULT_MODEL_PATH, __version__, load_model
+from aiqiang.analyzer import (
+    MISSING_MODEL_MESSAGE, analyze_loaded, thresholds, verdict_for,
+)
 from aiqiang.features import cjk_count
 from aiqiang.markers import CHECKS, HINTS
 from aiqiang.report import about_lines, format_probability, format_report
 from aiqiang.textio import read_text
 
 GREY = '#8A8A8A'
-VERDICT_COLORS = {'likely_ai': '#D9534F', 'likely_human': '#2E9E5B', 'uncertain': GREY}
+VERDICT_COLORS = {
+    'likely_ai': '#D9534F', 'leans_ai': '#E8893A', 'uncertain': GREY,
+    'leans_human': '#6DBF8B', 'likely_human': '#2E9E5B',
+}
 CLASS_COLORS = {'DeepSeek': '#4D6BFE', 'GPT': '#10A37F', 'Claude': '#D97757'}
 HIGHLIGHT_COLORS = [
     '#FFE0CC', '#FFF0BC', '#DCECCB', '#CDEEE7', '#D8E7FF',
@@ -53,7 +58,7 @@ class RulerApp:
         self._wheel_remainder = 0.0
         self._wheel_tag = 'RulerPanel' + str(id(self))
         self._about_window = None
-        self.root.title('AI腔尺子')
+        self.root.title('AI腔尺子 ' + __version__)
         size, minimum, position = window_layout(
             self.scale, root.winfo_screenwidth(), root.winfo_screenheight(),
         )
@@ -160,11 +165,19 @@ class RulerApp:
         ttk.Label(header, text='文风测量', font=(self.family, 11, 'bold')).pack(side='left')
         self.about_button = ttk.Button(header, text='关于', command=self.show_about)
         self.about_button.pack(side='right')
+        verdict_frame = ttk.Frame(panel)
+        verdict_frame.grid(row=1, column=0, sticky='ew', pady=(px(6), px(8)))
+        verdict_frame.columnconfigure(0, weight=1)
         self.verdict_label = ttk.Label(
-            panel, text='粘贴文字，量一量', foreground=GREY,
+            verdict_frame, text='粘贴文字，量一量', foreground=GREY,
             font=(self.family, 19, 'bold'), wraplength=px(360),
         )
-        self.verdict_label.grid(row=1, column=0, sticky='w', pady=(px(6), px(8)))
+        self.verdict_label.grid(row=0, column=0, sticky='w')
+        self.verdict_note = ttk.Label(
+            verdict_frame, foreground=GREY, font=self.small_font, wraplength=px(360),
+        )
+        self.verdict_note.grid(row=1, column=0, sticky='w', pady=(px(4), 0))
+        self.verdict_note.grid_remove()
         probability = ttk.Frame(panel)
         probability.grid(row=2, column=0, sticky='ew')
         self.prob_title = ttk.Label(probability, text='AI 可能性', foreground=GREY)
@@ -242,7 +255,10 @@ class RulerApp:
     def _resize_canvas(self, event):
         self.right_canvas.itemconfigure(self._panel_id, width=event.width)
         wrap = max(1, event.width - self.px(12))
-        for widget in (self.verdict_label, self.which_label, self.footer, self.notes_label):
+        for widget in (
+            self.verdict_label, self.verdict_note, self.which_label,
+            self.footer, self.notes_label,
+        ):
             widget.configure(wraplength=wrap)
 
     def _layout_marker(self, index):
@@ -288,12 +304,7 @@ class RulerApp:
         limits = thresholds(self.model)
         for i, piece in enumerate(pieces):
             p = piece['ai_prob']
-            if p >= limits['ai_high']:
-                color = VERDICT_COLORS['likely_ai']
-            elif p <= limits['human_low']:
-                color = VERDICT_COLORS['likely_human']
-            else:
-                color = GREY
+            color = VERDICT_COLORS[verdict_for(p, limits)]
             tk.Button(
                 frame, text='第{}段 {}'.format(i + 1, format_probability(p)),
                 font=self.small_font, foreground=color, activeforeground=color,
@@ -426,6 +437,12 @@ class RulerApp:
         label = '文字改动了，再量一次' if self.stale else result['verdict_text']
         color = GREY if self.stale else VERDICT_COLORS.get(result['verdict'], GREY)
         self.verdict_label.configure(text=label, foreground=color)
+        note = '' if self.stale else result.get('verdict_note', '')
+        self.verdict_note.configure(text=note)
+        if note:
+            self.verdict_note.grid()
+        else:
+            self.verdict_note.grid_remove()
         has_probability = result['ai_prob'] is not None and not self.stale
         self.prob_title.configure(foreground='#333333' if has_probability else GREY)
         self.prob_value.configure(
@@ -475,38 +492,52 @@ class RulerApp:
             return
         left, right = px(4), width - px(4)
         limits = thresholds(self.model)
-        low, high = limits['human_low'], limits['ai_high']
         zones = [
-            (0, low, '#D7EEDF', '更像人'), (low, high, '#E7E7E7', '不确定'),
-            (high, 1, '#F5D9D8', '很像 AI'),
+            (0, limits['human_low'], '#D7EEDF', '更像人'),
+            (limits['human_low'], limits['mid_low'], '#E6F3EA', '偏像人'),
+            (limits['mid_low'], limits['mid_high'], '#E7E7E7', '不确定'),
+            (limits['mid_high'], limits['ai_high'], '#F9E6D3', '偏像 AI'),
+            (limits['ai_high'], 1, '#F5D9D8', '很像 AI'),
         ]
+        zones = [zone for zone in zones if zone[1] > zone[0]]
+        segment_width = (right - left) / len(zones)
         captions = []
-        for a, b, color, caption in zones:
-            start, end = left + a * (right - left), left + b * (right - left)
+        p = max(0.0, min(1.0, self.result['ai_prob']))
+        x = left
+        for i, (a, b, color, caption) in enumerate(zones):
+            start, end = left + i * segment_width, left + (i + 1) * segment_width
             canvas.create_rectangle(
                 start, px(12), end, px(26), fill='#E7E7E7' if self.stale else color,
                 outline='', tags='zone',
             )
-            text_width = self._small_metrics.measure(caption) + px(4)
-            if end - start >= text_width:
-                x = (start + end - text_width) / 2
-            else:
-                x = start if a + b <= 1 else end - text_width
-            captions.append([max(left, min(x, right - text_width)), text_width, caption])
-        # Keep edge captions readable even when custom thresholds leave tiny zones.
-        for previous, current in zip(captions, captions[1:]):
-            current[0] = max(current[0], previous[0] + previous[1] + px(4))
-        captions[-1][0] = min(captions[-1][0], right - captions[-1][1])
-        for i in range(len(captions) - 2, -1, -1):
-            following = captions[i + 1]
-            captions[i][0] = min(captions[i][0], following[0] - px(4) - captions[i][1])
-        for x, _, caption in captions:
-            canvas.create_text(
-                x + px(2), px(34), text=caption, anchor='nw', fill=GREY,
-                font=self.small_font, tags='zone_caption',
+            if a <= p <= b:
+                x = start + (p - a) / (b - a) * segment_width
+            text_width = min(self._small_metrics.measure(caption) + px(4), right - left)
+            caption_x = (start + end - text_width) / 2
+            captions.append([max(left, min(caption_x, right - text_width)), text_width, caption])
+        gap = px(4)
+        if sum(c[1] for c in captions) + gap * (len(captions) - 1) <= right - left:
+            for previous, current in zip(captions, captions[1:]):
+                current[0] = max(current[0], previous[0] + previous[1] + gap)
+            captions[-1][0] = min(captions[-1][0], right - captions[-1][1])
+            for i in range(len(captions) - 2, -1, -1):
+                following = captions[i + 1]
+                captions[i][0] = min(captions[i][0], following[0] - gap - captions[i][1])
+        # At narrow widths, put conflicting captions on another row.
+        boxes = []
+        for caption_x, text_width, caption in captions:
+            item = canvas.create_text(
+                caption_x + px(2), px(34), text=caption, anchor='nw', fill=GREY,
+                font=self.small_font, width=max(1, text_width - px(4)), tags='zone_caption',
             )
-        p = self.result['ai_prob']
-        x = left + p * (right - left)
+            box = canvas.bbox(item)
+            for previous in boxes:
+                if box[0] < previous[2] + gap and box[2] + gap > previous[0]:
+                    if box[1] < previous[3] + gap:
+                        canvas.move(item, 0, previous[3] + gap - box[1])
+                        box = canvas.bbox(item)
+            boxes.append(box)
+        canvas.configure(height=max(box[3] for box in boxes) + px(6))
         color = GREY if self.stale else VERDICT_COLORS.get(self.result['verdict'], GREY)
         canvas.create_polygon(
             x - px(4), px(2), x + px(4), px(2), x, px(10),
@@ -516,7 +547,7 @@ class RulerApp:
 
     def _draw_which(self):
         inactive = not self.result or self.stale or self.result['verdict'] in (
-            'likely_human', 'too_short', 'no_model',
+            'likely_human', 'leans_human', 'too_short', 'no_model',
         )
         self.which_title.configure(foreground=GREY if inactive else '#333333')
         scores = {row['name']: row['p'] for row in self.result['which']} if self.result else {}

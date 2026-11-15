@@ -10,6 +10,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import ruler
+from aiqiang import __version__
 from aiqiang.report import format_probability
 from common import MODEL_PATH, ROOT, read_json
 
@@ -59,6 +60,7 @@ class CLITests(unittest.TestCase):
         self.assertEqual(code, 0, error)
         result = json.loads(out)
         self.assertIn('verdict', result)
+        self.assertEqual(result['verdict_note'], '')
         self.assertIn('不是…而是', out)
         self.assertNotIn('\\u4e0d', out)
 
@@ -67,8 +69,36 @@ class CLITests(unittest.TestCase):
         self.assertEqual(code, 0, error)
         for line in read_json(MODEL_PATH)['eval']['summary_lines']:
             self.assertIn(line, out)
-        self.assertIn('0.1.0', out)
+        self.assertIn(__version__, out)
+        self.assertIn('门槛：很像 AI ≥ 90.0%，偏像 AI ≥ 90.0%', out)
+        self.assertIn('不确定 ≥ 20.0%，偏像人 > 20.0%，更像人 ≤ 20.0%', out)
         self.assertIn('代码 MIT；模型权重 CC BY-SA 4.0（训练数据含维基百科）', out)
+
+    def test_tier_note_in_text_json_and_new_thresholds_in_about(self):
+        model = read_json(MODEL_PATH)
+        model['thresholds'].update(mid_high=0.8, mid_low=0.5)
+        model['ai_calibration'] = {'a': 0.0, 'b': 1.6}
+        note = '本档误报率为测试数据，仅供测试。'
+        model['tiers'] = {'leans_ai': {'label': '偏像 AI 写的', 'note': note}}
+        with tempfile.TemporaryDirectory(dir=str(ROOT / 'tests')) as directory:
+            path = Path(directory) / 'tiers.json'
+            path.write_bytes(json.dumps(model, ensure_ascii=False).encode('utf-8'))
+            text = '中文' * 30
+            code, out, error = self.run_cli(['-t', text], model_path=path)
+            self.assertEqual(code, 0, error)
+            lines = out.splitlines()
+            index = next(i for i, line in enumerate(lines) if line.startswith('结论：'))
+            self.assertTrue(lines[index].startswith('结论：偏像 AI 写的（AI 可能性 '))
+            self.assertEqual(lines[index + 1], '说明：' + note)
+            code, out, error = self.run_cli(['--json', '-t', text], model_path=path)
+            self.assertEqual(code, 0, error)
+            self.assertEqual(json.loads(out)['verdict_note'], note)
+            code, out, error = self.run_cli(['--about'], model_path=path)
+            self.assertEqual(code, 0, error)
+            self.assertIn('门槛：很像 AI ≥ 90.0%，偏像 AI ≥ 80.0%', out)
+            self.assertIn('不确定 ≥ 50.0%，偏像人 > 20.0%，更像人 ≤ 20.0%', out)
+            for line in model['eval']['summary_lines']:
+                self.assertIn(line, out)
 
     def test_piece_line_after_verdict_and_json_offsets(self):
         text = ' \r\n' + ('原来，今天路边的花开了。' * 30 + '\r\n\r\n') * 3 + ' \r\n'

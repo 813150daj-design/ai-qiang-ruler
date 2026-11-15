@@ -4,6 +4,8 @@ import unittest
 from unittest.mock import patch
 
 import ruler_gui
+from aiqiang import __version__
+from aiqiang.analyzer import VERDICT_LABELS, thresholds, verdict_for
 from aiqiang.report import format_probability, format_report
 from common import MODEL_PATH, ROOT, read_json
 
@@ -175,6 +177,118 @@ class GUITests(unittest.TestCase):
                 for row, expected in zip(self.app.result['which'], ('99%+', '1% 以下', '1% 以下')):
                     self.assertIn(row['name'] + ' ' + expected, report)
                 self.assertEqual(self.app.result['ai_prob'], probability)
+        self.showerror.assert_not_called()
+        self.assertEqual(self.errors, [])
+
+    def test_five_tier_colors_notes_copy_and_inactive_human_panel(self):
+        self.root.deiconify()
+        self.app.model['thresholds'].update(mid_high=0.8, mid_low=0.5)
+        self.app.model['tiers'] = {
+            code: dict(label=label, note='本档实测说明，随面板宽度自动换行。' * 4)
+            for code, label in VERDICT_LABELS.items()
+        }
+        text = '我今天去街口买菜，回来发现下雨了。' * 8
+        self.app._replace_text(text)
+        self.root.update()
+        for p, code, color in [
+            (0.95, 'likely_ai', '#D9534F'), (0.85, 'leans_ai', '#E8893A'),
+            (0.6, 'uncertain', ruler_gui.GREY), (0.4, 'leans_human', '#6DBF8B'),
+            (0.1, 'likely_human', '#2E9E5B'),
+        ]:
+            prediction = dict(
+                ai_prob=p, probs=[0.1, 0.6, 0.2, 0.1], which=[0.7, 0.2, 0.1],
+                pieces=[[0, len(text) // 2, p], [len(text) // 2, len(text), p]],
+            )
+            with self.subTest(code=code):
+                with patch('aiqiang.analyzer.predict_doc', return_value=prediction):
+                    self.app.analyze_text()
+                self.root.update()
+                self.assertEqual(str(self.app.verdict_label.cget('foreground')), color)
+                self.assertEqual(self.app.verdict_note.cget('text'), self.app.result['verdict_note'])
+                self.assertEqual(str(self.app.verdict_note.cget('foreground')), ruler_gui.GREY)
+                self.assertTrue(self.app.verdict_note.winfo_ismapped())
+                self.assertLessEqual(
+                    self.app.verdict_note.winfo_width(), self.app.verdict_note.master.winfo_width(),
+                )
+                self.assertGreater(
+                    self.app.verdict_note.winfo_height(), self.app.small_font.metrics('linespace'),
+                )
+                for tag in ('probability_triangle', 'probability_line'):
+                    self.assertEqual(self.app.prob_canvas.itemcget(tag, 'fill'), color)
+                for chip in self.app.pieces_frame.winfo_children():
+                    self.assertEqual(str(chip.cget('foreground')), color)
+                if code in ('likely_human', 'leans_human'):
+                    self.assertEqual(str(self.app.which_title.cget('foreground')), ruler_gui.GREY)
+                    for label, canvas, percent in self.app.which_rows.values():
+                        self.assertEqual(str(label.cget('foreground')), ruler_gui.GREY)
+                        self.assertEqual(str(percent.cget('foreground')), ruler_gui.GREY)
+                        self.assertEqual(canvas.itemcget(canvas.find_all()[-1], 'fill'), ruler_gui.GREY)
+                self.app.copy_button.invoke()
+                self.assertIn('说明：' + self.app.result['verdict_note'], self.root.clipboard_get())
+        self.assertEqual(self.root.title(), 'AI腔尺子 ' + __version__)
+        self.app.input_text.insert('end', '改动。')
+        self.root.update()
+        self.assertFalse(self.app.verdict_note.winfo_ismapped())
+        self.showerror.assert_not_called()
+        self.assertEqual(self.errors, [])
+
+    def test_equal_segments_captions_and_interpolated_marker_at_three_widths(self):
+        self.root.deiconify()
+        self.root.minsize(1, 1)
+        self.analyze_sample()
+        base = dict(min_chars=50, ai_high=0.9, human_low=0.2, which_min=0.5)
+        for mids, expected in [
+            ({}, [
+                ('更像人', '#D7EEDF', 0.0, 0.2),
+                ('不确定', '#E7E7E7', 0.2, 0.9),
+                ('很像 AI', '#F5D9D8', 0.9, 1.0),
+            ]),
+            (dict(mid_low=0.5, mid_high=0.8), [
+                ('更像人', '#D7EEDF', 0.0, 0.2),
+                ('偏像人', '#E6F3EA', 0.2, 0.5),
+                ('不确定', '#E7E7E7', 0.5, 0.8),
+                ('偏像 AI', '#F9E6D3', 0.8, 0.9),
+                ('很像 AI', '#F5D9D8', 0.9, 1.0),
+            ]),
+        ]:
+            self.app.model['thresholds'] = dict(base, **mids)
+            for width in (600, 900, 1200):
+                with self.subTest(mids=mids, width=width):
+                    self.root.geometry('{}x{}'.format(self.app.px(width), self.app.px(700)))
+                    self.root.update()
+                    self.app._draw_probability()
+                    self.root.update()
+                    canvas = self.app.prob_canvas
+                    captions = canvas.find_withtag('zone_caption')
+                    self.assertEqual([canvas.itemcget(c, 'text') for c in captions], [e[0] for e in expected])
+                    boxes = [canvas.bbox(c) for c in captions]
+                    for i, box in enumerate(boxes):
+                        self.assertGreaterEqual(box[0], 0)
+                        self.assertLessEqual(box[2], canvas.winfo_width())
+                        self.assertLessEqual(box[3], canvas.winfo_height())
+                        for other in boxes[:i]:
+                            self.assertTrue(
+                                box[2] < other[0] or other[2] < box[0]
+                                or box[3] < other[1] or other[3] < box[1],
+                                (box, other),
+                            )
+                    zones = canvas.find_withtag('zone')
+                    self.assertEqual(len(zones), len(expected))
+                    self.assertEqual([canvas.itemcget(z, 'fill') for z in zones], [e[1] for e in expected])
+                    coordinates = [canvas.coords(z) for z in zones]
+                    widths = [c[2] - c[0] for c in coordinates]
+                    for segment_width in widths:
+                        self.assertAlmostEqual(segment_width, widths[0])
+                    for index, (_, _, a, b) in enumerate(expected):
+                        for p in (a, a + (b - a) * 0.25, (a + b) / 2, b):
+                            self.app.result['ai_prob'] = p
+                            self.app.result['verdict'] = verdict_for(p, thresholds(self.app.model))
+                            self.app._draw_probability()
+                            x = canvas.coords(canvas.find_withtag('probability_line')[0])[0]
+                            start, _, end, _ = coordinates[index]
+                            self.assertGreaterEqual(x, start - 1e-8)
+                            self.assertLessEqual(x, end + 1e-8)
+                            self.assertAlmostEqual(x, start + (p - a) / (b - a) * (end - start))
         self.showerror.assert_not_called()
         self.assertEqual(self.errors, [])
 

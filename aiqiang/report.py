@@ -1,7 +1,7 @@
 """Chinese plain-text reports, without assertions about authorship."""
 
 from . import __version__
-from .analyzer import MISSING_MODEL_MESSAGE
+from .analyzer import MISSING_MODEL_MESSAGE, thresholds
 
 AFFILIATION = '非 Anthropic 官方，与 DeepSeek、OpenAI、Anthropic 官方均无关。'
 
@@ -21,6 +21,12 @@ def about_lines(model):
         lines.append(MISSING_MODEL_MESSAGE)
     else:
         lines.extend(model.get('eval', {}).get('summary_lines', []))
+        limits = thresholds(model)
+        lines.append((
+            '门槛：很像 AI ≥ {ai_high:.1%}，偏像 AI ≥ {mid_high:.1%}，'
+            '不确定 ≥ {mid_low:.1%}，偏像人 > {human_low:.1%}，'
+            '更像人 ≤ {human_low:.1%}。'
+        ).format(**limits))
     lines.extend([AFFILIATION, '代码 MIT；模型权重 CC BY-SA 4.0（训练数据含维基百科）'])
     return lines
 
@@ -34,6 +40,8 @@ def format_report(result, text):
     if result['ai_prob'] is not None:
         verdict += '（AI 可能性 {}）'.format(format_probability(result['ai_prob']))
     lines.append(verdict)
+    if result.get('verdict_note'):
+        lines.append('说明：' + result['verdict_note'])
     pieces = result['pieces']
     if len(pieces) > 1:
         scores = ' ｜ '.join(

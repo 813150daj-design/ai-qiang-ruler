@@ -1,12 +1,50 @@
 import random
 import unittest
 
-from aiqiang.markers import CHECKS, markers
-from common import GOLDEN_PATH, read_json
+from aiqiang.markers import CHECKS, _UPLIFT, markers
+from common import GOLDEN_PATH, ROOT, read_json
 from make_toy_model import load_reference
 
 
 class MarkerTests(unittest.TestCase):
+    def test_regexes_match_authoritative_reference_exactly(self):
+        ref = load_reference()
+        self.assertEqual(len(CHECKS), len(ref.CHECKS))
+        self.assertEqual(_UPLIFT.pattern, ref._UPLIFT.pattern)
+        self.assertEqual(_UPLIFT.flags, ref._UPLIFT.flags)
+        for (name, regex), (ref_name, ref_regex) in zip(CHECKS, ref.CHECKS):
+            self.assertEqual(name, ref_name)
+            if regex is None:
+                self.assertIsNone(ref_regex)
+            else:
+                self.assertEqual(regex.pattern, ref_regex.pattern)
+                self.assertEqual(regex.flags, ref_regex.flags)
+
+    def test_reference_counts_and_matched_spans_on_entire_ai_corpus(self):
+        ref = load_reference()
+        paths = sorted((ROOT / 'data' / 'ai').glob('*/*.txt'))
+        self.assertTrue(paths)
+        for path in paths:
+            with self.subTest(path=str(path.relative_to(ROOT))):
+                text = path.read_text(encoding='utf-8-sig')
+                rows = markers(text)
+                self.assertEqual({row['name']: row['count'] for row in rows}, ref.markers(text))
+                for row, (_, regex) in zip(rows, ref.CHECKS):
+                    self.assertEqual(row['count'], len(row['spans']))
+                    for start, end in row['spans']:
+                        self.assertTrue(0 <= start < end <= len(text))
+                        excerpt = text[start:end]
+                        self.assertTrue(excerpt.strip())
+                        if regex is not None:
+                            match = regex.match(text, start)
+                            self.assertIsNotNone(match)
+                            self.assertEqual(match.end(), end)
+                        elif row['name'] == '三连排比':
+                            self.assertEqual(ref.parallel(excerpt), 1)
+                        else:
+                            self.assertEqual(excerpt.replace('\n', ''), ref.sentences(text)[-1].strip())
+                            self.assertIsNotNone(ref._UPLIFT.search(excerpt.replace('\n', '')))
+
     def test_golden_counts_and_spans(self):
         for case in read_json(GOLDEN_PATH)['cases']:
             with self.subTest(name=case['name']):

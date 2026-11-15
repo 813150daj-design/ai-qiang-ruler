@@ -10,6 +10,13 @@ from .markers import markers
 
 DEFAULT_MODEL_PATH = Path(__file__).resolve().with_name('model.json')
 DEFAULT_THRESHOLDS = dict(min_chars=50, ai_high=0.9, human_low=0.2, which_min=0.5)
+VERDICT_LABELS = {
+    'likely_ai': '很像 AI 写的',
+    'leans_ai': '偏像 AI 写的',
+    'uncertain': '不确定',
+    'leans_human': '偏像人写的',
+    'likely_human': '更像人写的',
+}
 MISSING_MODEL_MESSAGE = '还没有模型文件 aiqiang/model.json'
 BASE_NOTES = [
     '这把尺子只量文风，不能证明是谁写的。人也会写出“AI 腔”，AI 也能写得不像 AI。',
@@ -52,7 +59,22 @@ def thresholds(model):
     values = dict(DEFAULT_THRESHOLDS)
     if model:
         values.update(model.get('thresholds', {}))
+    values.setdefault('mid_high', values['ai_high'])
+    values.setdefault('mid_low', values['human_low'])
     return values
+
+
+def verdict_for(p, limits):
+    """Return the tier code, retaining the three-tier boundaries of old models."""
+    if p >= limits['ai_high']:
+        return 'likely_ai'
+    if p >= limits.get('mid_high', limits['ai_high']):
+        return 'leans_ai'
+    if p <= limits['human_low']:
+        return 'likely_human'
+    if p < limits.get('mid_low', limits['human_low']):
+        return 'leans_human'
+    return 'uncertain'
 
 
 def _evidence(text, model, top_class):
@@ -88,7 +110,8 @@ def analyze_loaded(text, model):
         notes.append('这段文字里汉字不多，结果不可靠。')
     result = dict(
         version=__version__, chars=chars, verdict='no_model', verdict_text='还没有模型文件',
-        ai_prob=None, probs=None, which=[], which_text='', pieces=[], markers=rows,
+        verdict_note='', ai_prob=None, probs=None, which=[], which_text='',
+        pieces=[], markers=rows,
         baigu_index=sum(row['count'] > 0 for row in rows),
         evidence={'ai': [], 'human': []}, notes=notes,
     )
@@ -106,23 +129,23 @@ def analyze_loaded(text, model):
     if len(pieces) > 1:
         notes.insert(2, '文字较长，分成 {} 段分别量，再取平均。'.format(len(pieces)))
     ai_prob = prediction['ai_prob']
-    if ai_prob >= limits['ai_high']:
-        verdict, label = 'likely_ai', '很像 AI 写的'
-    elif ai_prob <= limits['human_low']:
-        verdict, label = 'likely_human', '更像人写的'
-    else:
-        verdict, label = 'uncertain', '不确定'
+    verdict = verdict_for(ai_prob, limits)
+    tier = model.get('tiers', {}).get(verdict, {})
+    label = tier.get('label', VERDICT_LABELS[verdict])
     which = [dict(name=name, p=p) for name, p in zip(model['classes'][1:], prediction['which'])]
     which.sort(key=lambda row: row['p'], reverse=True)
     if verdict == 'likely_human':
         which_text = '更像人写的，这一栏仅供参考'
+    elif verdict == 'leans_human':
+        which_text = '偏像人写的，这一栏仅供参考'
     elif which[0]['p'] < limits['which_min']:
         which_text = '三家都有点像，分不清'
     else:
         which_text = '最像 ' + which[0]['name']
     top_class = model['classes'].index(which[0]['name'])
     result.update(
-        verdict=verdict, verdict_text=label, ai_prob=ai_prob,
+        verdict=verdict, verdict_text=label, verdict_note=tier.get('note', ''),
+        ai_prob=ai_prob,
         probs=dict(zip(model['classes'], prediction['probs'])), which=which, which_text=which_text,
         evidence=_evidence(text, model, top_class), pieces=pieces,
     )

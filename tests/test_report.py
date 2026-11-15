@@ -38,6 +38,16 @@ class ReportTests(unittest.TestCase):
         self.assertEqual(lines[3], '分段：第1段 45% ｜ 第2段 80% ｜ 第3段 99%+ ｜ 第4段 1% 以下')
         self.assertEqual([p['ai_prob'] for p in result['pieces']], [0.45, 0.8, 1.0, 0.0])
 
+    def test_tier_note_immediately_after_verdict_and_before_pieces(self):
+        result = analyze_loaded('', None)
+        result['verdict_note'] = '本档实测说明。'
+        result['pieces'] = [dict(start=i, end=i + 1, ai_prob=0.5) for i in range(2)]
+        lines = format_report(result, '').splitlines()
+        self.assertEqual(lines[3], '说明：本档实测说明。')
+        self.assertTrue(lines[4].startswith('分段：'))
+        result['verdict_note'] = ''
+        self.assertNotIn('说明：', format_report(result, ''))
+
 
 if __name__ == '__main__':
     unittest.main()
