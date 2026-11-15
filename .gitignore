@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+# human texts are never part of this repo (only statistics derived from them)
+human/
+human_raw/
+*.log
+_GPT完成说明.md
