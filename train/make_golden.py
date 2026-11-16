@@ -26,7 +26,9 @@ OWN = [
     '别摔着！现在外婆不在了，那棵树也被砍了，只有我还记得枣子的甜味。',
 ]
 EDGE = ['', '   ', 'Hello world, this is English only.', '短短一句。', '😀😀 今天开心！！[哈哈] @小明 #周末# http://a.cn',
-        '“引号”「引号」……——2024年3月，OK。\r\n第二行，第二行，第二行，第二行。']
+        '“引号”「引号」……——2024年3月，OK。\r\n第二行，第二行，第二行，第二行。',
+        # characters added after Unicode 12.1 (v1.2.1): results must not depend on the Python version
+        '新字：䶶䶿鿰鿿\U0002A6D7\U00030000，@鿿用户 你好\U0001FBF0\U0001FBF1 ΣΑΣ ΟΔΟΣ Ꟈꟈ ⰯⱟⰮ x䶿一鿿y。']
 
 
 def main():

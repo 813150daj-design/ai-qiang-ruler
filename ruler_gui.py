@@ -1,9 +1,13 @@
 """AI腔尺子：Tkinter 离线窗口。"""
 
 import ctypes
+import os
+import sys
 import tkinter as tk
 from pathlib import Path
 from tkinter import filedialog, font, messagebox, ttk
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from aiqiang import DEFAULT_MODEL_PATH, __version__, load_model
 from aiqiang.analyzer import (

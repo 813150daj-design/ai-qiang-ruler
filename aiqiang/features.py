@@ -1,11 +1,67 @@
 """Model mathematics, ported in operation order from train/ref_features.py."""
 
+import io
+import json
 import math
+import os
 import re
 import unicodedata
 
+# ---------------------------------------------------------------- Unicode 12.1, frozen
+# The model was trained on Python 3.8. Freeze isalnum(), NFKC, lower() and
+# regex \w for characters assigned then; later characters pass through unchanged.
+with io.open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                          'unicode_12_1.json'), encoding='utf-8') as _table_file:
+    _UT = json.load(_table_file)
+
+
+def _cls(rs):
+    """A regex character-class body for inclusive code point ranges."""
+    return ''.join(re.escape(chr(a)) if a == b else
+                   re.escape(chr(a)) + '-' + re.escape(chr(b)) for a, b in rs)
+
+
+def _gaps(rs):
+    out, nxt = [], 0
+    for a, b in rs:
+        if a > nxt:
+            out.append([nxt, a - 1])
+        nxt = b + 1
+    if nxt <= 0x10FFFF:
+        out.append([nxt, 0x10FFFF])
+    return out
+
+
+_NEW = re.compile('([' + _cls(_gaps(_UT['assigned'])) + '])')
+_ALNUM = re.compile('[' + _cls(_UT['alnum']) + ']')
+_ALNUM_CACHE = {}
+
+
+def is_alnum(ch):
+    """str.isalnum() as Python 3.8 (Unicode 12.1) answers it."""
+    v = _ALNUM_CACHE.get(ch)
+    if v is None:
+        v = _ALNUM_CACHE[ch] = _ALNUM.match(ch) is not None
+    return v
+
+
+def by_known(text, fn):
+    """Apply fn to runs assigned in Unicode 12.1; pass later characters through.
+
+    Keep whole runs so normalisation and contextual lowercasing match Python 3.8.
+    """
+    if not _NEW.search(text):
+        return fn(text)
+    return ''.join(p if i % 2 else fn(p) for i, p in enumerate(_NEW.split(text)))
+
+
+def _nfkc(s):
+    return unicodedata.normalize('NFKC', s)
+
+
 _URL = re.compile(r'(https?://|www\.)\S+')
-_AT = re.compile(r'@[\w一-鿿\-]{1,30}')
+# Equals r'@[\w一-鿿\-]{1,30}' on Python 3.8, including the full CJK range.
+_AT = re.compile('@[' + _cls(_UT['alnum']) + r'_一-鿿\-]{1,30}')
 _EMO = re.compile(r'\[[^\[\]\s]{1,8}\]')
 _TAG = re.compile(r'#[^#\n]{1,30}#')
 _DQ = '“”「」『』〝〞〟"'
@@ -37,7 +93,7 @@ MASK = 'x'
 
 def normalize(text):
     """Apply exactly the reference's normalisation, in the same order."""
-    t = unicodedata.normalize('NFKC', text)
+    t = by_known(text, _nfkc)
     t = _MD_HR.sub('', t)
     t = _MD_LINE.sub('', t)
     t = _MD_INLINE.sub('', t)
@@ -50,7 +106,7 @@ def normalize(text):
     t = t.replace('…', '...')
     t = _DOTS.sub('…', t)
     t = _DASH.sub('—', t)
-    t = t.lower()
+    t = by_known(t, str.lower)
     t = _DIG.sub('0', t)
     t = _LAT.sub('a', t)
     t = _WS.sub('', t)
@@ -66,7 +122,7 @@ def distort(norm, keep=KEEP, punct=PUNCT, mask=MASK):
     for ch in norm:
         if ch in keep or ch in punct:
             out.append(ch)
-        elif ch.isalnum():
+        elif is_alnum(ch):
             if not out or out[-1] != mask:
                 out.append(mask)
         else:

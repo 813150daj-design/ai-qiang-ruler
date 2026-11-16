@@ -1,6 +1,6 @@
 """AI腔尺子：只量文风的离线工具。"""
 
-__version__ = "1.2.0"
+__version__ = "1.2.1"
 
 from .analyzer import DEFAULT_MODEL_PATH, analyze, load_model
 

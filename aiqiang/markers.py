@@ -27,6 +27,7 @@ CHECKS = [
     ('大词抒情', re.compile(
         r'量子|熵|宇宙|星河|星辰|永恒|灵魂|褶皱|缝隙|共振|维度|意义感'
         r'|烟火气|诗意|底色|和解|救赎|温柔')),
+    # \d uses live Unicode data for style checks only, never model features.
     ('客服/格式', re.compile(
         r'希望(这些|以上|对你)|如果你(愿意|需要)|需要的话|好问题|很高兴|让我们|以下是'
         r'|^\s*(#{1,4} |[-*] |\d+[.、] )|\*\*', re.M)),

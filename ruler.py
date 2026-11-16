@@ -2,7 +2,10 @@
 
 import argparse
 import json
+import os
 import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from aiqiang import DEFAULT_MODEL_PATH, load_model
 from aiqiang.analyzer import analyze_loaded

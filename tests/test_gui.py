@@ -1,7 +1,11 @@
 import os
-import tkinter as tk
 import unittest
 from unittest.mock import patch
+
+try:
+    import tkinter as tk
+except ImportError as error:
+    raise unittest.SkipTest('Tkinter is unavailable in this Python: ' + str(error))
 
 import ruler_gui
 from aiqiang import __version__

@@ -1,8 +1,9 @@
 import copy
+import unicodedata
 import unittest
 
 from aiqiang import features
-from common import GOLDEN_PATH, MODEL_PATH, assert_nested, read_json
+from common import GOLDEN_PATH, MODEL_PATH, ROOT, assert_nested, read_json
 from make_toy_model import load_reference
 
 
@@ -30,6 +31,47 @@ class FeatureTests(unittest.TestCase):
                 assert_nested(self, features.softmax(case['logits']), case['probs'])
                 assert_nested(self, features.split_pieces(text, self.model.get('long_text')), case['pieces'])
                 assert_nested(self, features.predict_doc(self.model, text), case['doc'])
+
+    @unittest.skipUnless(
+        unicodedata.unidata_version == '12.1.0',
+        'Full table validation requires Python 3.8 with Unicode 12.1.0',
+    )
+    def test_frozen_unicode_table_matches_every_code_point(self):
+        table = read_json(ROOT / 'aiqiang' / 'unicode_12_1.json')
+        self.assertEqual(table['unicode'], '12.1.0')
+        for key, live in [
+            ('assigned', lambda ch: unicodedata.category(ch) != 'Cn'),
+            ('alnum', str.isalnum),
+        ]:
+            included = bytearray(0x110000)
+            for start, end in table[key]:
+                included[start:end + 1] = b'\x01' * (end - start + 1)
+            for cp in range(0x110000):
+                if bool(included[cp]) != live(chr(cp)):
+                    self.fail('{} differs from Unicode 12.1 at U+{:04X}'.format(key, cp))
+
+    def test_unicode_12_1_literal_results(self):
+        # Literal normalize/distort results from train/ref_features.py on Python 3.8.
+        cases = [
+            ('x䶿一鿿y', 'a䶿一鿿a', 'x䶿一鿿x'),
+            ('@鿿用户 你好', '你好', '你x'),
+            ('编号 \U0001fbf0\U0001fbf1 12', '编号\U0001fbf0\U0001fbf10',
+             'x\U0001fbf0\U0001fbf1x'),
+            ('ΣΑΣ ΟΔΟΣ', 'σαςοδος', 'x'),
+            ('@\U0001fbf0\U0001fbf1 你好', '@\U0001fbf0\U0001fbf1你好',
+             '@\U0001fbf0\U0001fbf1你x'),
+            ('Σ\U0001e290Σ', 'σ\U0001e290σ', 'x\U0001e290x'),
+            ('\U00010570\U0001e290\U0001fbf0䶿鿿',
+             '\U00010570\U0001e290\U0001fbf0䶿鿿',
+             '\U00010570\U0001e290\U0001fbf0䶿鿿'),
+            ('Å䶿\u0301', 'å䶿\u0301', 'x䶿\u0301'),
+        ]
+        for text, normalized, distorted in cases:
+            with self.subTest(text=text):
+                self.assertEqual(features.normalize(text), normalized)
+                self.assertEqual(features.distort(normalized), distorted)
+                self.assertEqual(features.source_string(text, {'source': 'plain'}), normalized)
+                self.assertEqual(features.source_string(text, {'source': 'distorted'}), distorted)
 
     def test_split_boundaries_and_short_remainder(self):
         for size in (0, 499, 500):

@@ -11,13 +11,66 @@ This file is the single written-down definition of:
 The program in ../aiqiang must give the same numbers (tests compare against golden.json made from this file).
 Standard library only.
 """
+import io
+import json
 import math
+import os
 import re
 import unicodedata
 
+# ---------------------------------------------------------------- Unicode 12.1, frozen (v1.2.1, 11-16)
+# The model was trained on Python 3.8 (Unicode 12.1). Newer Pythons know more characters, so isalnum(), NFKC,
+# lower() and regex \w treat characters added after 12.1 differently (U+4DBF, U+9FFF became letters on 3.9+).
+# Every Unicode-dependent step here reads the frozen 12.1 table made by make_unicode_table.py instead, so the
+# features are the same on every Python version.
+_UT = json.load(io.open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                                     'aiqiang', 'unicode_12_1.json'), encoding='utf-8'))
+
+
+def _cls(rs):
+    """a regex character-class body for inclusive code point ranges"""
+    return ''.join(re.escape(chr(a)) if a == b else re.escape(chr(a)) + '-' + re.escape(chr(b)) for a, b in rs)
+
+
+def _gaps(rs):
+    out, nxt = [], 0
+    for a, b in rs:
+        if a > nxt:
+            out.append([nxt, a - 1])
+        nxt = b + 1
+    if nxt <= 0x10FFFF:
+        out.append([nxt, 0x10FFFF])
+    return out
+
+
+_NEW = re.compile('([' + _cls(_gaps(_UT['assigned'])) + '])')   # not assigned yet in Unicode 12.1
+_ALNUM = re.compile('[' + _cls(_UT['alnum']) + ']')
+_ALNUM_CACHE = {}
+
+
+def is_alnum(ch):
+    """str.isalnum() as Python 3.8 (Unicode 12.1) answers it"""
+    v = _ALNUM_CACHE.get(ch)
+    if v is None:
+        v = _ALNUM_CACHE[ch] = _ALNUM.match(ch) is not None
+    return v
+
+
+def by_known(text, fn):
+    """fn on every run of characters assigned in Unicode 12.1; later characters pass through unchanged, as they
+    did on Python 3.8 (unassigned there: NFKC and lower() left them alone and they split nothing)"""
+    if not _NEW.search(text):
+        return fn(text)
+    return ''.join(p if i % 2 else fn(p) for i, p in enumerate(_NEW.split(text)))
+
+
+def _nfkc(s):
+    return unicodedata.normalize('NFKC', s)
+
+
 # ---------------------------------------------------------------- normalisation (model features only)
 _URL = re.compile(r'(https?://|www\.)\S+')
-_AT = re.compile(r'@[\w一-鿿\-]{1,30}')
+_AT = re.compile('@[' + _cls(_UT['alnum']) + r'_一-鿿\-]{1,30}')   # = r'@[\w一-鿿\-]{1,30}' on Python 3.8
 _EMO = re.compile(r'\[[^\[\]\s]{1,8}\]')          # weibo-style emoticon codes like [哈哈]
 _TAG = re.compile(r'#[^#\n]{1,30}#')
 _DQ = '“”「」『』〝〞〟"'   # “ ” 「 」 『 』 〝 〞 〟 "
@@ -36,7 +89,7 @@ def normalize(text):
     """NFKC, drop markdown marks, urls/@names/emoticon codes/#tags#, unify quotes, ellipses and dashes,
     every digit run -> '0', every latin-letter run -> 'a', remove all whitespace.
     (Markdown marks are dropped so the model learns wording, not formatting; the 客服/格式 check still sees them.)"""
-    t = unicodedata.normalize('NFKC', text)
+    t = by_known(text, _nfkc)
     t = _MD_HR.sub('', t)
     t = _MD_LINE.sub('', t)
     t = _MD_INLINE.sub('', t)
@@ -49,7 +102,7 @@ def normalize(text):
     t = t.replace('…', '...')          # NFKC already does this; kept for clarity
     t = _DOTS.sub('…', t)
     t = _DASH.sub('—', t)
-    t = t.lower()
+    t = by_known(t, str.lower)
     t = _DIG.sub('0', t)
     t = _LAT.sub('a', t)
     t = _WS.sub('', t)
@@ -86,7 +139,7 @@ def distort(norm, keep=KEEP, punct=PUNCT, mask=MASK):
     for ch in norm:
         if ch in keep or ch in punct:
             out.append(ch)
-        elif ch.isalnum():
+        elif is_alnum(ch):
             if not out or out[-1] != mask:
                 out.append(mask)
         else:
