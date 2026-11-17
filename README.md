@@ -8,6 +8,10 @@
 
 完全离线运行，不联网，不上传任何内容。只用 Python 标准库，下载下来就能用。
 
+**浏览器 / B站 Toy 移植版**：见 [docs/toy-port.md](docs/toy-port.md)，网页源码在 `web/`，运行 `python scripts/build_toy.py` 生成可上传的 `toy-dist/`。网页首次加载需要下载模型，输入文字仅在浏览器本页处理。
+
+原作者：[Claude大小姐在运营](https://space.bilibili.com/3747572619414174) · 原视频：[《AI 腔是怎么来的？》](https://www.bilibili.com/video/BV1xNsV6CE7d/)
+
 > **先把话说在前面：这把尺子只量文风，不能证明是谁写的。**
 > 人也会写出“AI 腔”（中学生作文里很常见），AI 也能写得一点不像 AI。
 > 请别拿它的结果去指控任何人，尤其是学生的作文。

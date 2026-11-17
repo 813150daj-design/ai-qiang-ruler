@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#255b91"><title>AI 腔尺子 · 文风测量室</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <main>
+    <header><div class="title"><span class="logo" aria-hidden="true">尺</span><div><h1>AI 腔尺子</h1><p>贴一段中文，量量它的 AI 腔。</p></div></div><span class="privacy">文字只在本页分析，不会上传</span></header>
+    <div class="ruler" aria-hidden="true"><span>文风测量室</span><span>只量文风，不鉴定作者</span></div>
+    <div class="workspace">
+      <section class="editor" aria-labelledby="input-title">
+        <div class="section-head"><h2 id="input-title">待测文字</h2><span id="counter">0 个汉字</span></div>
+        <label class="sr-only" for="text">输入要分析的中文文字</label>
+        <textarea id="text" spellcheck="false" maxlength="30000" placeholder="把文字贴在这里。
+
+至少 50 个汉字，100 字以上更有参考价值。
+长文会自动分段测量。"></textarea>
+        <div class="editor-tools"><button id="example" class="quiet">试一段示例</button><button id="clear" class="quiet">清空</button><span>最多 30,000 字符</span></div>
+        <button id="measure" class="primary">量一量 <span>Ctrl / ⌘ + Enter</span></button>
+        <p id="status" role="status" aria-live="polite">首次测量会加载约 8.7 MB 的模型。</p>
+      </section>
+      <section class="results" aria-labelledby="result-title" aria-live="polite">
+        <div class="section-head"><h2 id="result-title">测量结果</h2><button id="copy" class="quiet" hidden>复制结果</button></div>
+        <div id="empty"><div class="empty-measure" aria-hidden="true">？</div><h3>文字的味道，要量了才知道。</h3><p>输入文字后点「量一量」，查看 AI 可能性、<br>三家文风倾向和十条「AI 八股」。</p></div>
+        <div id="output" hidden></div>
+      </section>
+    </div>
+    <section id="annotations" class="annotations" hidden><div class="section-head"><h2>原文标注</h2><span>点规则查看命中位置</span></div><div id="rules" class="rules"></div><div id="pieces" class="pieces"></div><p id="highlight-help"></p><div id="highlight" class="highlight"></div></section>
+    <aside class="caution"><strong>它是一把文风尺子，不是作者鉴定器。</strong><p>人也会写出“AI 腔”，AI 也能写得不像 AI。新闻、百科、改写、人机合写和短文尤其难判断。三家倾向仅在 DeepSeek、GPT、Claude 之间比较，不代表实际使用的模型。请别用结果指控任何人，尤其是学生的作文。</p></aside>
+    <footer><div><strong>原作与出处</strong><p>原作者：<a href="https://space.bilibili.com/3747572619414174" target="_blank" rel="noopener noreferrer">Claude大小姐在运营</a><br>原视频：<a href="https://www.bilibili.com/video/BV1xNsV6CE7d/" target="_blank" rel="noopener noreferrer">《AI 腔是怎么来的？》 · BV1xNsV6CE7d</a></p></div><div><p>本页为浏览器 / B站 Toy 移植版，沿用原作模型与规则。<br>非 Anthropic、OpenAI 或 DeepSeek 官方产品。</p><a href="./credits.html" target="_blank" rel="noopener">许可、模型来源与局限</a></div></footer>
+  </main>
+  <script type="module" src="./app.mjs"></script>
+</body></html>
